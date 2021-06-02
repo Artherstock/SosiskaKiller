@@ -17,17 +17,28 @@ import datetime
 #         "radio": ('включи музыку', 'воспроизведи радио', 'включи радио'),
 #         "stupid1": ('расскажи анекдот', 'рассмеши меня', 'ты знаешь анекдоты')
 #     }
-# }
-ggep = input('j')
-pts = {"gg":["ggwp", "ljdjh"]}
-for i in pts:
-    print(i)
-pts.update({f'{ggep}': 'asd'})
-print(pts)
+pts = {"Привет":["Привет!", "Приветульки"],
+       "Как дела?":["Нормально", "Отлично", "Плохо"],
+       "Почему?":["Сам не знаю", "Просто настроения нету"],
+       "Кто твои родители?": ["По сути у меня нету родителей, но у меня есть создатели, Артур и Степа!"],
+       "Что ты умеешь?": ["Я пока что мало что знаю и умею, но если ты меня будешь обучать я стану умнее"]}
+
+while True:
+    new_question = input('Введи новый вопрос >>')
+    new_answer = input('Введи ответ на вопрос >>')
+
+    for i in list(pts):
+        if new_question in i:
+            print('Такой вопрос есть, введи другой')
+
+        elif new_question not in i:
+            pts.update({new_question : new_answer})
+
+    print(pts)
 
 
 
-# функции
+
 def speak(what):
     print(what)
     speak_engine.say(what)
