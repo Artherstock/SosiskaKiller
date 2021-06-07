@@ -8,6 +8,7 @@ import pyttsx3
 import datetime
 import random
 import pprint
+import kivy
 
 # настройки
 # opts = {
