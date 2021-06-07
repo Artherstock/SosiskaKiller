@@ -6,6 +6,8 @@ import speech_recognition as sr
 from fuzzywuzzy import fuzz
 import pyttsx3
 import datetime
+import random
+import pprint
 
 # настройки
 # opts = {
@@ -17,48 +19,90 @@ import datetime
 #         "radio": ('включи музыку', 'воспроизведи радио', 'включи радио'),
 #         "stupid1": ('расскажи анекдот', 'рассмеши меня', 'ты знаешь анекдоты')
 #     }
-# правила использования
-print('Правила по использования программой \n 1. Не вводите слова или конструкции которых не существует \n 2. Следуйте указаниям  ')
-pts = {"Привет":["Привет!", "Приветульки"],
-       "Как дела?":["Нормально", "Отлично", "Плохо"],
-       "Почему?":["Сам не знаю", "Просто настроения нету"],
-       "Кто твои родители?": ["По сути у меня нету родителей, но у меня есть создатели, Артур и Степа!"],
-       "Что ты умеешь?": ["Я пока что мало что знаю и умею, но если ты меня будешь обучать я стану умнее"]}
-new_question = input('Введи новый вопрос >>')
-new_answer = input('Введи ответ на вопрос(если их несколько то пишите между ними знак *) >>')
+
+r = sr.Recognizer()
+m = sr.Microphone(device_index=1)
+speak_engine = pyttsx3.init()
 
 
-def add(new_answer, new_question):
-    for h in range(len(pts)):
-        for i in list(pts):
-            if new_question in i:
-                print('Такой вопрос есть, введи другой')
-            elif new_question not in i and '*' not in new_answer:
-                pts.update({new_question : new_answer})
-            else:
-                new_answer_split = new_answer.split("*")
-                pts.update({new_question : new_answer_split})
+pts = {"привет":["Привет!", "Приветульки"],
+       "как дела":["Нормально", "Отлично", "Плохо"],
+       "почему":["Сам не знаю", "Просто настроения нету"],
+       "кто твои родители": ["По сути у меня нету родителей, но у меня есть создатели, Артур и Степа!"],
+       "что ты умеешь": ["Я пока что мало что знаю и умею, но если ты меня будешь обучать я стану умнее"]}
 
+main = speak_engine.getProperty('voices')
+
+# new_question = input('Введи новый вопрос >>')
+# new_answer = input('Введи ответ на вопрос(если их несколько то пишите между ними знак *) >>')
+# searcher = input("Задайте вопрос?")
+# del_key = input("Хотите ли вы удалить вопрос(напишите вопрос который хотите удалить)")
+
+
+def add(new_answer, new_question, pts):
+    if new_question in list(pts):
+        print('Такой вопрос есть, введи другой')
+    elif new_question not in list(pts):
+        pts.update({new_answer : [new_question]})
     print(pts)
 
 
-add(new_answer, new_question)
+def search(lol, pts):
+    a = 0
+    for i in list(pts):
+        if lol in i:
+            speak(random.choice(pts[i]))
+            a += 1
+    if a == 0:
+        print('Вы меня не обучили как отвечать на такой вопрос')
+
+
+def delate(del_key, pts):
+    del pts[del_key]
+
+
+voices = speak_engine.getProperty('voices')
+speak_engine.setProperty('voice', voices[0].id)
 
 
 def speak(what):
-    print(what)
+    pprint.pprint(what)
     speak_engine.say(what)
     speak_engine.runAndWait()
     speak_engine.stop()
 
 
 def callback(recognizer, audio):
-    try:
-        voice = recognizer.recognize_google(audio, language="ru-RU").lower()
-        print("[log] Распознано: " + voice)
-        speak_engine.say(voice)
-        speak_engine.runAndWait()
-        speak_engine.stop()
+    voice = recognizer.recognize_google(audio, language="ru-RU").lower()
+    spis = voice.split(' кома ')
+    if spis[0] in list(pts):
+        search(spis[0], pts)
+    elif spis[0] == 'добавить':
+        add(spis[1], spis[2], pts)
+        print(pts)
+    elif spis[0] == 'удалить':
+        delate(spis[1], pts)
+        print(pts)
+    elif spis[0] == 'время':
+        now = datetime.datetime.now()
+        speak("Сейчас " + str(now.hour) + ":" + str(now.minute))
+    elif spis[0] == 'библиотека':
+        speak(pts)
+    elif spis[0] == 'помощь':
+        speak(['Основные команды:',
+               'добавить - говорите добавить после добавить говорите кома и вопрос который хотите добавить, после добавления вопроса говорите кома и ответ на вопрос',
+               'удалить - говорите удалите потом кома и после кома говорите вопрос которы хотите удалить(он удалится вместе со своим ответом)',
+               'время -  просто говорите слово время и оно выведет вам время', 'библиотека - просто говорите слово библиотека и вам покажет список всех вопросов и ответов',
+               'Вы можете просто спросить какой небуть вопрос из библиотеки и он выберет ответ на свой вкус и ответит вам'])
+    elif spis[0] == 'добавить ответ':
+        pts[spis[1]].append(spis[2])
+        speak(pts)
+    print('[log] Распознано: ' + voice)
+    speak_engine.say(voice)
+    speak_engine.runAndWait()
+    speak_engine.stop()
+    callback(recognizer, audio)
+
 
         # if voice.startswith(opts["alias"]):
         #     # обращаются к Кеше
@@ -74,13 +118,13 @@ def callback(recognizer, audio):
         #     cmd = recognize_cmd(cmd)
         #     execute_cmd(cmd['cmd'])
 
-    except sr.UnknownValueError:
-        print("[log] Голос не распознан!")
-        speak_engine.say('Голос не распознан')
-        speak_engine.runAndWait()
-        speak_engine.stop()
-    except sr.RequestError as e:
-        print("[log] Неизвестная ошибка, проверьте интернет!")
+    # except sr.UnknownValueError:
+    #     print("[log] Голос не распознан!")
+    #     speak_engine.say('Голос не распознан')
+    #     speak_engine.runAndWait()
+    #     speak_engine.stop()
+    # except sr.RequestError as e:
+    #     print("[log] Неизвестная ошибка, проверьте интернет!")
 
 
 # def recognize_cmd(cmd):
@@ -115,21 +159,23 @@ def callback(recognizer, audio):
 
 
 # запуск
-r = sr.Recognizer()
-m = sr.Microphone(device_index=1)
 
 # with m as source:
 #     r.adjust_for_ambient_noise(source)
 
-speak_engine = pyttsx3.init()
+# speak_engine = pyttsx3.init()
 
 # Только если у вас установлены голоса для синтеза речи!
-# voices = speak_engine.getProperty('voices')
-# speak_engine.setProperty('voice', voices[4].id)
 
 
-speak("Добрый день, повелитель")
-speak("Кеша слушает")
+# speak("Добрый день, повелитель")
+# speak("Кеша слушает")
+
+# speak('добавить - говорите добавить после добавить говорите кома и вопрос который хотите добавить, после добавления вопроса говорите кома и ответ на вопрос')
+        # speak('удалить - говорите удалите потом кома и после кома говорите вопрос которы хотите удалить(он удалится вместе со своим ответом)')
+        # speak('время -  просто говорите слово время и оно выведет вам время')
+        # speak('библиотека - просто говорите слово библиотека и вам покажет список всех вопросов и ответов')
+        # speak('Вы можете просто спросить какой небуть вопрос из библиотеки и он выберет ответ на свой вкус и ответит вам')
 
 stop_listening = r.listen_in_background(m, callback)
 while True: time.sleep(0.1) # infinity loop
